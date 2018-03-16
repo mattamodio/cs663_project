@@ -10,7 +10,7 @@ class DiscoGAN(object):
         dim_b1,
         dim_b2,
         activation=lrelu,
-        learning_rate=.0001,
+        learning_rate=.001,
         restore_folder=''):
         """Initialize the model."""
         self.dim_b1 = dim_b1
@@ -226,29 +226,20 @@ class Generator(object):
         with tf.variable_scope(self.name):
             x = tf.reshape(x, [-1, 28, 28, 1])
 
-            h1 = tf.layers.conv2d(x, filters=16, kernel_size=4, padding='same', strides=2, activation=None, name='h1', reuse=reuse)
+            h1 = tf.layers.conv2d(x, filters=32, kernel_size=4, padding='same', strides=2, activation=None, name='h1', reuse=reuse)
             h1 = lrelu(h1)
 
-            h2 = tf.layers.conv2d(h1, filters=32, kernel_size=4, padding='same', strides=1, activation=None, name='h2', reuse=reuse)
-            # h2 = tf.contrib.layers.batch_norm(h2, is_training=is_training, scale=True, decay=0.9, scope=self.name + 'bn_h2' + str(int(reuse)))
+            h2 = tf.layers.conv2d(h1, filters=64, kernel_size=4, padding='same', strides=2, activation=None, name='h2', reuse=reuse)
             h2 = lrelu(h2)
 
-            h3 = tf.layers.conv2d(h2, filters=64, kernel_size=4, padding='same', strides=1, activation=None, name='h3', reuse=reuse)
-            # h3 = tf.contrib.layers.batch_norm(h3, is_training=is_training, scale=True, decay=0.9, scope=self.name + 'bn_h3' + str(int(reuse)))
+            h3 = tf.layers.conv2d(h2, filters=128, kernel_size=4, padding='same', strides=2, activation=None, name='h3', reuse=reuse)
             h3 = lrelu(h3)
 
-            h1_t = tf.layers.conv2d_transpose(h3, filters=16, kernel_size=4, padding='same', strides=1, activation=None, name='h1_t', reuse=reuse)
-            # h1_t = tf.contrib.layers.batch_norm(h1_t, is_training=is_training, scale=True, decay=0.9, scope=self.name + 'bn_h1_t' + str(int(reuse)))
-            h1_t = lrelu(h1_t)
-
-            h2_t = tf.layers.conv2d_transpose(h1_t, filters=8, kernel_size=4, padding='same', strides=1, activation=None, name='h2_t', reuse=reuse)
-            # h2_t = tf.contrib.layers.batch_norm(h2_t, is_training=is_training, scale=True, decay=0.9, scope=self.name + 'bn_h2_t' + str(int(reuse)))
-            h2_t = lrelu(h2_t)
-
-            h3_t = tf.layers.conv2d_transpose(h2_t, filters=1, kernel_size=4, padding='same', strides=2, activation=None, name='h3_t', reuse=reuse)
-
-
-            out = tf.reshape(h3_t, [-1, 28 * 28])
+            fc0 = tf.reshape(h3, [-1, 4 * 4 * 128])
+            fc1 = tf.layers.dense(fc0, 3000, activation=lrelu, name='fc1', reuse=reuse)
+            fc2 = tf.layers.dense(fc1, 2000, activation=lrelu, name='fc2', reuse=reuse)
+            fc3 = tf.layers.dense(fc2, 100, activation=lrelu, name='fc3', reuse=reuse)
+            out = tf.layers.dense(fc3, 28 * 28, activation=None, name='out', reuse=reuse)
 
         if not reuse:
             print("Generator {} input/output:".format(self.name))
@@ -256,9 +247,10 @@ class Generator(object):
             print(h1)
             print(h2)
             print(h3)
-            print(h1_t)
-            print(h2_t)
-            print(h3_t)
+            print(fc0)
+            print(fc1)
+            print(fc2)
+            print(fc3)
             print(out)
             print("")
 
@@ -282,8 +274,8 @@ class Discriminator(object):
             fc1 = tf.layers.dense(x, 1024, activation=None, reuse=reuse, name='fc1')
             fc1 = lrelu(fc1)
 
-            fc2 = tf.layers.dense(fc1, 512, activation=None, reuse=reuse, name='fc2')
-            fc2 = minibatch(fc2, 512, name=self.name + '2', reuse=reuse)
+            fc2 = tf.layers.dense(fc1, 512 - 15, activation=None, reuse=reuse, name='fc2')
+            fc2 = minibatch(fc2, 512 - 15, name=self.name + '2', reuse=reuse)
             fc2 = lrelu(fc2)
 
             fc3 = tf.layers.dense(fc2, 256, activation=None, reuse=reuse, name='fc3')
