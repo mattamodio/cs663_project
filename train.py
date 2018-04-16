@@ -1,3 +1,5 @@
+import matplotlib
+matplotlib.use('agg')
 import numpy as np
 import matplotlib.pyplot as plt
 from tensorflow.examples.tutorials.mnist import input_data
@@ -87,21 +89,4 @@ for i in range(1, 100000):
             #     ax2.imshow(Gb1[ii].reshape((28, 28)), cmap='gray', vmin=0)
             #     ax3.imshow(xb2_reconstructed[ii].reshape((28, 28)), cmap='gray', vmin=0)
             # fig2.canvas.draw()
-
-    
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 

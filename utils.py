@@ -3,6 +3,7 @@ import math
 import tensorflow as tf
 import numpy as np
 
+
 def now():
     return datetime.datetime.now().strftime('%m-%d %H:%M:%S')
 
@@ -32,24 +33,4 @@ def obn(name):
 
 def get_all_node_names():
     return [n.name for n in tf.get_default_graph().as_graph_def().node]
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 

@@ -243,16 +243,9 @@ class Generator(object):
 
         if not reuse:
             print("Generator {} input/output:".format(self.name))
-            print(x)
-            print(h1)
-            print(h2)
-            print(h3)
-            print(fc0)
-            print(fc1)
-            print(fc2)
-            print(fc3)
-            print(out)
-            print("")
+            for tensor in [x, h1, h2, h3, fc0, fc1, fc2, fc3, out]:
+                print(tensor)
+            print('')
 
         return out
 
@@ -285,12 +278,9 @@ class Discriminator(object):
 
         if not reuse:
             print("Discriminator {} input/output:".format(self.name))
-            print(x)
-            print(fc1)
-            print(fc2)
-            print(fc3)
-            print(out)
-            print("")
+            for tensor in [x, fc1, fc2, fc3, out]:
+                print(tensor)
+            print('')
 
         return out
 
@@ -309,18 +299,3 @@ def minibatch(input_, input_dim, num_kernels=15, kernel_dim=15, name='', reuse=F
     minibatch_features = tf.reduce_mean(tf.exp(-abs_diffs), 2)
 
     return tf.concat([input_, minibatch_features], 1)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
