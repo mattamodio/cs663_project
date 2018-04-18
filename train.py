@@ -1,3 +1,5 @@
+import matplotlib
+matplotlib.use('agg')
 import numpy as np
 import glob, pickle, os
 import matplotlib
@@ -161,7 +163,7 @@ for i in range(1, 200000):
         Gb1 = (Gb1+1) / 2
         xb2_reconstructed = (xb2_reconstructed+1) / 2
         Gb2 = (Gb2+1) / 2
-            
+
         print(Gb1.min(), Gb1.max(), xb1_reconstructed.min(), xb1_reconstructed.max())
 
         fig.clf()
@@ -200,7 +202,7 @@ for i in range(1, 200000):
                     ax4.imshow(img_masked)
         fig.canvas.draw()
         fig.savefig('b1_to_b2_{}.png'.format(data), dpi=500)
-        
+
 
         fig.clf()
         fig.subplots_adjust(.01, .01, .99, .99, .01, .01)
@@ -241,14 +243,3 @@ for i in range(1, 200000):
 
         print('Saved.')
         discogan.save(folder=SAVEFOLDER)
-
-
-
-
-
-
-
-
-
-
-

@@ -6,12 +6,12 @@ tf.set_random_seed(0)
 WASSERSTEIN = False
 
 def conv(x, nfilt, name, reuse, padding='same', k=4, s=2):
-    return tf.layers.conv2d(x, filters=nfilt, kernel_size=k, padding=padding, strides=[s,s], 
+    return tf.layers.conv2d(x, filters=nfilt, kernel_size=k, padding=padding, strides=[s,s],
                             kernel_initializer=tf.truncated_normal_initializer(0,.02), activation=None,
                             name=name, reuse=reuse)
 
 def conv_t(x, nfilt, name, reuse, k=4, s=2):
-    return tf.layers.conv2d_transpose(x, filters=nfilt, kernel_size=k, padding='same', strides=[s,s], 
+    return tf.layers.conv2d_transpose(x, filters=nfilt, kernel_size=k, padding='same', strides=[s,s],
                             kernel_initializer=tf.truncated_normal_initializer(0,.02), activation=None,
                             name=name, reuse=reuse)
 
@@ -149,13 +149,13 @@ class DiscoGAN(object):
             self.predsb1 = self.Attn(self.xb1, is_training=self.is_training)
             self.predsb2 = self.Attn(self.xb2, is_training=self.is_training, reuse=True)
             #TODO: generators want to make their synthetics look like b1/b2 to attn model
-            
+
             self.loss_attn = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.predsb1, labels=tf.zeros_like(self.predsb1)))
             self.loss_attn += tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.predsb2, labels=tf.ones_like(self.predsb2)))
 
             self.attnb1 = tf.gradients(self.loss_attn, self.xb1)[0]
             self.attnb2 = tf.gradients(self.loss_attn, self.xb2)[0]
-            
+
             self.attnb1 = tf.abs(self.attnb1)
             self.attnb1 = self.attnb1 / tf.reduce_sum(self.attnb1, axis=1, keep_dims=True)
             self.attnb1 = self.attnb1 / tf.reduce_max(self.attnb1, axis=1, keep_dims=True)
@@ -297,7 +297,7 @@ class DiscoGAN(object):
             _ = self.sess.run([obn('train_op_D')], feed_dict=feed)
             if self.attn:
                 _ = self.sess.run([obn('train_op_attn')], feed_dict=feed)
- 
+
     def get_layer(self, xb1, xb2, name):
         """Get a layer of the network by name for the entire datasets given in xb1 and xb2."""
         tensor_name = "{}:0".format(name)
@@ -454,7 +454,7 @@ class Generator(object):
     def __call__(self, x_1d, is_training, reuse=False, nfilt=32):
         """Return the output of the generator."""
         with tf.variable_scope(self.name):
-            x = tf.reshape(x_1d, [-1, self.input_dim, self.input_dim, self.channels])            
+            x = tf.reshape(x_1d, [-1, self.input_dim, self.input_dim, self.channels])
 
             e1 = unet_conv(x, nfilt*1, 'e1', reuse, is_training)
             e2 = unet_conv(e1, nfilt*2, 'e2', reuse, is_training)
@@ -472,7 +472,9 @@ class Generator(object):
             d5 = unet_conv_t(d4, e3, nfilt*4, 'd5', reuse, is_training)
             d6 = unet_conv_t(d5, e2, nfilt*2, 'd6', reuse, is_training)
             d7 = unet_conv_t(d6, e1, nfilt*1, 'd7', reuse, is_training)
-            out = unet_conv_t(d7, None, self.channels, 'out', reuse, is_training, activation=tf.nn.tanh, use_batch_norm=False, use_dropout=False)
+            out = unet_conv_t(
+                d7, None, self.channels, 'out', reuse, is_training,
+                activation=tf.nn.tanh, use_batch_norm=False, use_dropout=False)
 
             out_1d = tf.reshape(out, (-1, self.output_dim*self.output_dim*self.channels))
 
@@ -531,7 +533,10 @@ class Discriminator(object):
             h3 = unet_conv(h2, nfilt*4, 'h3', reuse, is_training)
             h4 = unet_conv(h3, nfilt*8, 'h4', reuse, is_training)
 
-            out = unet_conv(h4, 1, 'out', reuse, is_training, s=1, use_batch_norm=False, activation=None)
+            out = unet_conv(
+                h4, 1, 'out', reuse, is_training, s=1, use_batch_norm=False,
+                activation=None)
+
         if not reuse:
             print("Discriminator {} input/output:".format(self.name))
             print(x)
@@ -558,46 +563,3 @@ def minibatch(input_, input_dim, num_kernels=32, kernel_dim=15, name='', reuse=F
     minibatch_features = tf.reduce_mean(tf.exp(-abs_diffs), 2)
 
     return minibatch_features
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
