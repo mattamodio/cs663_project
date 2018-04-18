@@ -130,8 +130,8 @@ for i in range(1, 200000):
     xb1 = load1.next_batch(batch_size)
     xb2 = load2.next_batch(batch_size)
 
-    xb1 = np.stack([randomize_image(img.reshape((imdim,imdim,channels))) for img in xb1], 0)
-    xb2 = np.stack([randomize_image(img.reshape((imdim,imdim,channels))) for img in xb2], 0)
+    xb1 = np.stack([randomize_image(img.reshape((imdim,imdim,channels)), enlarge_size=int(1.2*imdim), output_size=imdim) for img in xb1], 0)
+    xb2 = np.stack([randomize_image(img.reshape((imdim,imdim,channels)), enlarge_size=int(1.2*imdim), output_size=imdim) for img in xb2], 0)
 
     discogan.train(xb1, xb2)
 

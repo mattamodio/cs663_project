@@ -340,7 +340,7 @@ class AttentionNet(object):
         self.name = name
         self.channels = channels
 
-    def __call__(self, x, is_training, nfilt=64, reuse=False):
+    def __call__(self, x, is_training, nfilt=32, reuse=False):
         """Return the output of the discriminator."""
         with tf.variable_scope(self.name):
             x = tf.reshape(x, [-1, self.input_dim, self.input_dim, self.channels])
@@ -381,7 +381,7 @@ class GeneratorResnet(object):
         self.output_dim = output_dim
         self.channels = channels
 
-    def __call__(self, x_1d, is_training, nfilt=64, reuse=False):
+    def __call__(self, x_1d, is_training, nfilt=32, reuse=False):
         image = tf.reshape(x_1d, [-1, self.input_dim, self.input_dim, self.channels])
         with tf.variable_scope(self.name):
             def residule_block(x, dim, k=3, s=1, name='res'):
@@ -451,7 +451,7 @@ class Generator(object):
         self.name = name
         self.channels = channels
 
-    def __call__(self, x_1d, is_training, reuse=False, nfilt=64):
+    def __call__(self, x_1d, is_training, reuse=False, nfilt=32):
         """Return the output of the generator."""
         with tf.variable_scope(self.name):
             x = tf.reshape(x_1d, [-1, self.input_dim, self.input_dim, self.channels])            
@@ -514,7 +514,7 @@ class Discriminator(object):
         self.name = name
         self.channels = channels
 
-    def __call__(self, x, is_training, nfilt=64, reuse=False):
+    def __call__(self, x, is_training, nfilt=32, reuse=False):
         """Return the output of the discriminator."""
         with tf.variable_scope(self.name):
             x = tf.reshape(x, [-1, self.input_dim, self.input_dim, self.channels])
