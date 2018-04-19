@@ -1,9 +1,8 @@
 import tensorflow as tf
 import os
-from utils import lrelu, nameop, tbn, obn
-tf.set_random_seed(0)
+from cs663_project.utils import lrelu, nameop, tbn, obn
 
-WASSERSTEIN = False
+tf.set_random_seed(0)
 
 def conv(x, nfilt, name, reuse, padding='same', k=4, s=2):
     return tf.layers.conv2d(x, filters=nfilt, kernel_size=k, padding=padding, strides=[s,s],
@@ -76,6 +75,7 @@ class DiscoGAN(object):
         restore_folder='',
         channels=1,
         attn=False,
+        wasserstein=False,
         limit_gpu_fraction=.4):
         """Initialize the model."""
         self.dim_b1 = dim_b1
@@ -210,7 +210,7 @@ class DiscoGAN(object):
         """Discriminator loss."""
         self.loss_D = 0.
 
-        if not WASSERSTEIN:
+        if not wasserstein:
             self.loss_D += .5*tf.reduce_mean(adversarial_loss(self.D1_probs_z, tf.ones_like(self.D1_probs_z)))
             self.loss_D += .5*tf.reduce_mean(adversarial_loss(self.D2_probs_z, tf.ones_like(self.D2_probs_z)))
 
@@ -370,7 +370,9 @@ class AttentionNet(object):
 
         return out
 
+
 class GeneratorResnet(object):
+
     def __init__(self,
         input_dim,
         output_dim,
@@ -478,27 +480,11 @@ class Generator(object):
 
             out_1d = tf.reshape(out, (-1, self.output_dim*self.output_dim*self.channels))
 
-        if not reuse:
-            print("Generator {} input/output:".format(self.name))
-            print(x)
-            print(e1)
-            print(e2)
-            print(e3)
-            print(e4)
-            print(e5)
-            print(e6)
-            print(e7)
-            print(e8)
-            print(d1)
-            print(d2)
-            print(d3)
-            print(d4)
-            print(d5)
-            print(d6)
-            print(d7)
-            print(out)
-            print(out_1d)
-            print("")
+        tensors = [
+            x, e1, e2, e3, e4, e5, e6, e7, e8, d1, d2, d3, d4, d5, d6, d7, out, out_1d]
+
+        for tensor in tensors:
+            print(tensor)
 
         return out_1d
 
@@ -537,15 +523,9 @@ class Discriminator(object):
                 h4, 1, 'out', reuse, is_training, s=1, use_batch_norm=False,
                 activation=None)
 
-        if not reuse:
-            print("Discriminator {} input/output:".format(self.name))
-            print(x)
-            print(h1)
-            print(h2)
-            print(h3)
-            print(h4)
-            print(out)
-            print("")
+        tensors = [x, h1, h2, h3, h4, out]
+        for tensor in tensors:
+            print(tensor)
 
         return out
 

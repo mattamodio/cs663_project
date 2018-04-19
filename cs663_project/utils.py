@@ -1,7 +1,22 @@
+from collections import namedtuple
 import datetime
 import math
 import tensorflow as tf
 import numpy as np
+
+
+# Parameters for the neural network
+DiscoConfig = namedtuple('DiscoConfig', [
+    # Data parameters
+    'num_classes', 'image_size', 'channels',
+    # Training parameters
+    'batch_size', 'num_iterations',
+    # Optimizations
+    'learning_rate', 'attn', 'decay',
+    # Network parameters
+    # Meta parameters
+    'model_out',
+])
 
 
 def now():

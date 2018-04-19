@@ -70,35 +70,3 @@ class Loader(object):
             data_out[j] = data[i]
         return data_out
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

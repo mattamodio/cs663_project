@@ -6,5 +6,7 @@ dependencies:
     - Pillow
     - scipy
     - scikit-learn
-    - tensorflow-gpu
+    - requests
     - jupyter
+    - pip:
+        - tensorflow-gpu

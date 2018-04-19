@@ -1,0 +1,34 @@
+#!/usr/bin/env python
+import os
+
+import requests
+
+import cs663_project.common as common
+
+
+COIL_100_URL = 'http://www.cs.columbia.edu/CAVE/databases/SLAM_coil-20_coil-100/coil-100/coil-100.zip'
+
+
+def prepare_dirs():
+    if not os.path.exists(common.DATA_RAW):
+        os.makedirs(common.DATA_RAW)
+    if not os.path.exists(common.DATA_PROCESSED):
+        os.makedirs(common.DATA_PROCESSED)
+
+
+def download_data(url, location=None):
+    file_name = url.split('/')[-1]
+    print("Downloading {}".format(file_name))
+    with open(location + file_name, "wb") as f:
+        response = requests.get(url)
+        f.write(response.content)
+
+
+def main():
+    # Create data directories if they don't exist
+    prepare_dirs()
+    download_data(COIL_100_URL, common.DATA_RAW)
+
+
+if __name__ == '__main__':
+    main()
