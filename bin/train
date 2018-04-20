@@ -2,28 +2,30 @@
 import argparse
 import numpy as np
 import os
+
 import matplotlib
 matplotlib.use('Agg')
-
 import matplotlib.pyplot as plt
 import tensorflow as tf
 from tensorflow.examples.tutorials.mnist import input_data
 from skimage import color
+
+import cs663_project.common as common
 from cs663_project.utils import now, DiscoConfig
 from cs663_project.model import DiscoGAN
 from cs663_project.loader import Loader
-from cs663_project.data_tools import get_data
+from cs663_project.data_tools import get_data, randomize_image
+
 
 
 def build_config(args):
     batch1, batch2, channels, imdim = get_data(args.data)
 
     if args.model_out is None:
-        model_out = MODEL_FOLDER + 'model_{}/'.format(args.data)
+        model_out = "{}/{}/".format(common.MODEL_FOLDER, args.data)
 
     # Note: could make this truly optional (e.g., don't do decay if not here)
-    if args.decay == 0.0:
-        args.decay = args.learning_rate / 100.
+    decay = args.decay if (args.decay != 0.0) else args.learning_rate / 100.
 
     # TODO fill in number of classes
     disco_config = DiscoConfig(
@@ -33,9 +35,11 @@ def build_config(args):
         batch_size = args.batch_size,
         num_iters = args.num_iters,
         learning_rate = args.learning_rate,
-        attn = args.attn,
-        wasserstein = args.wass,
-        model_out = model_out
+        attn = args.attention,
+        decay = decay,
+        wasserstein = args.wasserstein,
+        model_out = model_out,
+        save_iter = args.save_interval
     )
 
     return batch1, batch2, disco_config
@@ -54,7 +58,7 @@ def train(batch1, batch2, dconfig):
         attn=dconfig.attn)
 
     if not os.path.exists(dconfig.model_out):
-        os.mkdir(dconfig.model_out)
+        os.makedirs(dconfig.model_out)
 
     plt.ioff();
     fig = plt.figure(figsize=(6, 12))
@@ -64,15 +68,15 @@ def train(batch1, batch2, dconfig):
         if i % 10 == 0:
             print("Iter {} ({})".format(i, now()))
 
-        xb1 = load1.next_batch(batch_size)
-        xb2 = load2.next_batch(batch_size)
+        xb1 = load1.next_batch(dconfig.batch_size)
+        xb2 = load2.next_batch(dconfig.batch_size)
 
         xb1 = np.stack([randomize_image(
-            img.reshape((imdim, imdim, channels)), enlarge_size=int(1.2 * imdim), output_size=imdim)
-            for img in xb1], 0)
+            img.reshape((dconfig.image_size, dconfig.image_size, dconfig.channels)),
+            enlarge_size=int(1.2 * dconfig.image_size), output_size=dconfig.image_size) for img in xb1], 0)
         xb2 = np.stack([randomize_image(
-            img.reshape((imdim, imdim, channels)), enlarge_size=int(1.2 * imdim), output_size=imdim)
-            for img in xb2], 0)
+            img.reshape((dconfig.image_size, dconfig.image_size, dconfig.channels)),
+            enlarge_size=int(1.2 * dconfig.image_size), output_size=dconfig.image_size) for img in xb2], 0)
 
         discogan.train(xb1, xb2)
 
@@ -91,7 +95,7 @@ def train(batch1, batch2, dconfig):
             Gb1 = discogan.get_layer(testb1, testb2, 'Gb1')
             xb2_reconstructed = discogan.get_layer(testb1, testb2, 'xb2_reconstructed')
             Gb2 = discogan.get_layer(testb1, testb2, 'Gb2')
-            if ATTN:
+            if dconfig.attn:
                 attb1 = discogan.get_layer(testb1, testb2, 'attnb1')
                 attb2 = discogan.get_layer(testb1, testb2, 'attnb2')
 
@@ -107,7 +111,7 @@ def train(batch1, batch2, dconfig):
             fig.clf()
             fig.subplots_adjust(.01, .01, .99, .99, .01, .01)
             for ii in range(10):
-                if ATTN:
+                if dconfig.attn:
                     ax1 = fig.add_subplot(10, 4, 4 * ii + 1)
                     ax2 = fig.add_subplot(10, 4, 4 * ii + 2)
                     ax3 = fig.add_subplot(10, 4, 4 * ii + 3)
@@ -122,18 +126,18 @@ def train(batch1, batch2, dconfig):
                     for ax in (ax1, ax2, ax3):
                         ax.set_xticks([])
                         ax.set_yticks([])
-                if channels==1:
-                    ax1.imshow(testb1[ii].reshape((imdim, imdim)), cmap='gray', vmin=0, vmax=1)
-                    ax2.imshow(Gb2[ii].reshape((imdim, imdim)), cmap='gray', vmin=0, vmax=1)
-                    ax3.imshow(xb1_reconstructed[ii].reshape((imdim, imdim)), cmap='gray', vmin=0, vmax=1)
+                if dconfig.channels == 1:
+                    ax1.imshow(testb1[ii].reshape((dconfig.image_size, dconfig.image_size)), cmap='gray', vmin=0, vmax=1)
+                    ax2.imshow(Gb2[ii].reshape((dconfig.image_size, dconfig.image_size)), cmap='gray', vmin=0, vmax=1)
+                    ax3.imshow(xb1_reconstructed[ii].reshape((dconfig.image_size, dconfig.image_size)), cmap='gray', vmin=0, vmax=1)
                 else:
-                    ax1.imshow(testb1[ii].reshape((imdim, imdim, channels)))
-                    ax2.imshow(Gb2[ii].reshape((imdim, imdim, channels)))
-                    ax3.imshow(xb1_reconstructed[ii].reshape((imdim, imdim, channels)))
-                    if ATTN:
+                    ax1.imshow(testb1[ii].reshape((dconfig.image_size, dconfig.image_size, dconfig.channels)))
+                    ax2.imshow(Gb2[ii].reshape((dconfig.image_size, dconfig.image_size, dconfig.channels)))
+                    ax3.imshow(xb1_reconstructed[ii].reshape((dconfig.image_size, dconfig.image_size, dconfig.channels)))
+                    if dconfig.attn:
                         x = attb1[ii]
-                        x = x.reshape((imdim,imdim,3)); x = x.sum(axis=2)
-                        img_hsv = color.rgb2hsv(testb1[ii].reshape((imdim, imdim, channels)))
+                        x = x.reshape((dconfig.image_size,dconfig.image_size,3)); x = x.sum(axis=2)
+                        img_hsv = color.rgb2hsv(testb1[ii].reshape((dconfig.image_size, dconfig.image_size, dconfig.channels)))
                         x = x - x.min(); x = x / x.max();
                         img_hsv[:,:,2] *= x
                         img_masked = color.hsv2rgb(img_hsv)
@@ -145,7 +149,7 @@ def train(batch1, batch2, dconfig):
             fig.clf()
             fig.subplots_adjust(.01, .01, .99, .99, .01, .01)
             for ii in range(10):
-                if ATTN:
+                if dconfig.attn:
                     ax1 = fig.add_subplot(10, 4, 4 * ii + 1)
                     ax2 = fig.add_subplot(10, 4, 4 * ii + 2)
                     ax3 = fig.add_subplot(10, 4, 4 * ii + 3)
@@ -160,18 +164,18 @@ def train(batch1, batch2, dconfig):
                     for ax in (ax1, ax2, ax3):
                         ax.set_xticks([])
                         ax.set_yticks([])
-                if channels==1:
-                    ax1.imshow(testb2[ii].reshape((imdim, imdim)), cmap='gray', vmin=0, vmax=1)
-                    ax2.imshow(Gb1[ii].reshape((imdim, imdim)), cmap='gray', vmin=0, vmax=1)
-                    ax3.imshow(xb2_reconstructed[ii].reshape((imdim, imdim)), cmap='gray', vmin=0, vmax=1)
+                if dconfig.channels == 1:
+                    ax1.imshow(testb2[ii].reshape((dconfig.image_size, dconfig.image_size)), cmap='gray', vmin=0, vmax=1)
+                    ax2.imshow(Gb1[ii].reshape((dconfig.image_size, dconfig.image_size)), cmap='gray', vmin=0, vmax=1)
+                    ax3.imshow(xb2_reconstructed[ii].reshape((dconfig.image_size, dconfig.image_size)), cmap='gray', vmin=0, vmax=1)
                 else:
-                    ax1.imshow(testb2[ii].reshape((imdim, imdim, channels)))
-                    ax2.imshow(Gb1[ii].reshape((imdim, imdim, channels)))
-                    ax3.imshow(xb2_reconstructed[ii].reshape((imdim, imdim, channels)))
-                    if ATTN:
+                    ax1.imshow(testb2[ii].reshape((dconfig.image_size, dconfig.image_size, dconfig.channels)))
+                    ax2.imshow(Gb1[ii].reshape((dconfig.image_size, dconfig.image_size, dconfig.channels)))
+                    ax3.imshow(xb2_reconstructed[ii].reshape((dconfig.image_size, dconfig.image_size, dconfig.channels)))
+                    if dconfig.attn:
                         x = attb2[ii]
-                        x = x.reshape((imdim,imdim,3)); x = x.sum(axis=2)
-                        img_hsv = color.rgb2hsv(testb2[ii].reshape((imdim, imdim, channels)))
+                        x = x.reshape((dconfig.image_size,dconfig.image_size,3)); x = x.sum(axis=2)
+                        img_hsv = color.rgb2hsv(testb2[ii].reshape((dconfig.image_size, dconfig.image_size, dconfig.channels)))
                         x = x - x.min(); x = x / x.max();
                         img_hsv[:,:,2] *= x
                         img_masked = color.hsv2rgb(img_hsv)
@@ -179,9 +183,14 @@ def train(batch1, batch2, dconfig):
             fig.canvas.draw()
             fig.savefig('b2_to_b1_{}.png'.format(data), dpi=500)
 
+        if i % dconfig.save_iter == 0:
             print('Saved.')
             discogan.save(folder=dconfig.model_out)
 
+    # TODO should check with matt if there was any important logic to the way things
+    # were saved before
+    print('Saved.')
+    discogan.save(folder=dconfig.model_out)
 
 
 def main():
@@ -193,28 +202,31 @@ def main():
         help="Specify the dataset to train on. Can be one of 'cifar', 'monet', 'zebra', or 'coil'")
     # Optional arguments
     parser.add_argument(
-        '-b', "--batchsize", type=int, default=10,
+        '-b', "--batch_size", type=int, default=10,
         help="Batch size for training iterations.")
     parser.add_argument(
-        '-e', "--numiters", type=int, default=200000,
+        '-i', "--num_iters", type=int, default=200000,
         help="Number of iterations of training to perform.")
     parser.add_argument(
-        '-l', "--learningrate", type=float, default=0.002,
+        '-l', "--learning_rate", type=float, default=0.002,
         help="Learning rate for gradient descent.")
     parser.add_argument(
         '-a', "--attention", type=bool, default=False,
         help="Enables the attention mechanism.")
     parser.add_argument(
-        '-w', "--wass", type=bool, default=False,
+        '-w', "--wasserstein", type=bool, default=False,
         help="Enables Wasserstein loss.")
     parser.add_argument(
         '-d', "--decay", type=float, default=0.0,
         help="Specifies decay for the learning rate."
     )
     parser.add_argument(
-        '-o', "--modelout", type=str, default=None,
+        '-o', "--model_out", type=str, default=None,
         help="Specify the save folder for the output model."
     )
+    parser.add_argument(
+        '-s', "--save_interval", type=int, default=100,
+        help="Save the model every x iterations.")
     args = parser.parse_args()
 
     batch1, batch2, dconfig = build_config(args)

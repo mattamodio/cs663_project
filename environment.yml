@@ -3,9 +3,11 @@ dependencies:
     - python=3.6
     - matplotlib
     - numpy
+    - opencv
     - Pillow
     - scipy
     - scikit-learn
+    - scikit-image
     - requests
     - jupyter
     - requests

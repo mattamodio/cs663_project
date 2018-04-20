@@ -10,12 +10,13 @@ DiscoConfig = namedtuple('DiscoConfig', [
     # Data parameters
     'num_classes', 'image_size', 'channels',
     # Training parameters
-    'batch_size', 'num_iterations',
+    'batch_size', 'num_iters',
     # Optimizations
     'learning_rate', 'attn', 'decay',
+    'wasserstein',
     # Network parameters
     # Meta parameters
-    'model_out',
+    'model_out', 'save_iter'
 ])
 
 

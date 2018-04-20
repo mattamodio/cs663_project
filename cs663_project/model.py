@@ -85,6 +85,7 @@ class DiscoGAN(object):
         self.iteration = 0
         self.channels = channels
         self.attn = attn
+        self.wasserstein = wasserstein
 
         if restore_folder:
             self._restore(restore_folder)
@@ -210,7 +211,7 @@ class DiscoGAN(object):
         """Discriminator loss."""
         self.loss_D = 0.
 
-        if not wasserstein:
+        if not self.wasserstein:
             self.loss_D += .5*tf.reduce_mean(adversarial_loss(self.D1_probs_z, tf.ones_like(self.D1_probs_z)))
             self.loss_D += .5*tf.reduce_mean(adversarial_loss(self.D2_probs_z, tf.ones_like(self.D2_probs_z)))
 
@@ -229,7 +230,7 @@ class DiscoGAN(object):
         self.loss_G2 = 0.
 
         # fool the discriminator loss
-        if not WASSERSTEIN:
+        if not self.wasserstein:
             self.loss_G1 += tf.reduce_mean(adversarial_loss(self.D1_probs_G, tf.ones_like(self.D1_probs_G)))
             self.loss_G2 += tf.reduce_mean(adversarial_loss(self.D2_probs_G, tf.ones_like(self.D2_probs_G)))
         else:
