@@ -1,9 +1,15 @@
 import glob
+import os
 import pickle
+import re
+import shutil
+import zipfile
 
 import numpy as np
 import scipy.ndimage
 from scipy.misc import imrotate, imresize
+
+import cs663_project.common as common
 
 
 def randomize_image(img, enlarge_size=286, output_size=256):
@@ -23,6 +29,7 @@ def randomize_image(img, enlarge_size=286, output_size=256):
 
     return img
 
+
 def get_data(data_str):
     if data_str == 'cifar':
         return get_data_cifar()
@@ -34,6 +41,7 @@ def get_data(data_str):
         return get_data_zebra()
     else:
         raise ValueError("Unrecognized data set: {}".format(data_str))
+
 
 def get_data_cifar(dir='data/cifar/data_batch_*'):
     files_ = glob.glob(dir)
@@ -115,4 +123,75 @@ def get_data_zebra():
     b2 = (b2 / 127.5) - 1# b2 / 255.
 
     return b1, b2, 3, 256
+
+
+def get_data_coil():
+    """Gets the coil-100 data.
+
+    Returns
+    -------
+        A tuple:
+            - imgs1 : The first batch of images
+            - imgs2 : The second batch of images
+            - c : Number of channels in the images
+            - w : The width (and height) of the images
+    """
+    fp = common.DATA_PROCESSED + 'coil.npz'
+    if not os.path.isfile(fp):
+        generate_coil_proc()
+
+    cdf = np.load(fp)
+    data, labels = cdf['data'], cdf['labels']
+
+    _, w, _, c = data.shape
+    data = data.reshape((-1, w * w * c))
+
+    # Just split by rotation level -- 0-175 is set1, 180-355 is set2
+    imgs1, imgs2 = [], []
+    for index, (_, rotation) in enumerate(labels):
+        if int(rotation) < 180:
+            imgs1.append(data[index])
+        else:
+            imgs2.append(data[index])
+
+    # TODO -- i noticed that pixel values for monet ims are being normalized
+    # between 0 and 1. not sure if that's necessary here.
+    imgs1, imgs2 = np.array(imgs1), np.array(imgs2)
+    print(imgs1)
+    return imgs1, imgs2, c, w
+
+
+def generate_coil_proc(cleanup=True):
+    """Will convert the zip file downloaded by download_data
+    to an npz file.
+
+    Arguments
+    ---------
+        cleanup (bool) : Delete the raw zip file after we have converted
+            it to an npz file.
+    """
+    zip_fp = common.DATA_RAW + 'coil-100.zip'
+    temp_fp = common.DATA_RAW + 'coil-100/'
+    if not os.path.isfile(zip_fp):
+        raise ValueError("Please run 'download_data coil' to get the appropriate dataset")
+
+    # Unzip images
+    zf = zipfile.ZipFile(zip_fp, 'r')
+    zf.extractall(common.DATA_RAW)
+    zf.close()
+
+    # Convert images to npz file
+    ims = list(glob.glob(temp_fp + '*.png'))
+    labels = []
+    for im in ims:
+        labels.append(re.findall('\d+', os.path.basename(im)))
+    labels = np.array(labels)
+    data = np.stack([scipy.ndimage.imread(f) for f in ims], axis=0)
+    np.savez(common.DATA_PROCESSED + 'coil', data=data, labels=labels)
+
+    # Remove temporary files
+    if cleanup:
+        os.remove(zip_fp)
+        shutil.rmtree(temp_fp)
+
 

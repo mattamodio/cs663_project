@@ -8,5 +8,6 @@ dependencies:
     - scikit-learn
     - requests
     - jupyter
+    - requests
     - pip:
         - tensorflow-gpu
