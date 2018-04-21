@@ -1,18 +1,22 @@
 import tensorflow as tf
 import os
 from cs663_project.utils import lrelu, nameop, tbn, obn
+import cs663_project.similarity as similarity
+
 
 tf.set_random_seed(0)
 
 def conv(x, nfilt, name, reuse, padding='same', k=4, s=2):
-    return tf.layers.conv2d(x, filters=nfilt, kernel_size=k, padding=padding, strides=[s,s],
-                            kernel_initializer=tf.truncated_normal_initializer(0,.02), activation=None,
-                            name=name, reuse=reuse)
+    return tf.layers.conv2d(
+        x, filters=nfilt, kernel_size=k, padding=padding, strides=[s,s],
+        kernel_initializer=tf.truncated_normal_initializer(0,.02),
+        activation=None, name=name, reuse=reuse)
 
 def conv_t(x, nfilt, name, reuse, k=4, s=2):
-    return tf.layers.conv2d_transpose(x, filters=nfilt, kernel_size=k, padding='same', strides=[s,s],
-                            kernel_initializer=tf.truncated_normal_initializer(0,.02), activation=None,
-                            name=name, reuse=reuse)
+    return tf.layers.conv2d_transpose(
+        x, filters=nfilt, kernel_size=k, padding='same', strides=[s,s],
+        kernel_initializer=tf.truncated_normal_initializer(0,.02),
+        activation=None, name=name, reuse=reuse)
 
 def unet_conv(x, nfilt, name, reuse, is_training, s=2, use_batch_norm=True, activation=lrelu):
     x = conv(x, nfilt, name, reuse, s=s)
@@ -49,10 +53,6 @@ def adversarial_loss(logits, labels):
     #return tf.nn.sigmoid_cross_entropy_with_logits(logits=logits, labels=labels)
     return (logits - labels)**2
 
-def similarity_loss(real, fake):
-
-    return tf.zeros_like(real)
-
 def instance_norm(input, name="instance_norm", reuse=False):
     with tf.variable_scope(name, reuse=reuse):
         depth = input.get_shape()[3]
@@ -63,6 +63,7 @@ def instance_norm(input, name="instance_norm", reuse=False):
         inv = tf.rsqrt(variance + epsilon)
         normalized = (input-mean)*inv
         return scale*normalized + offset
+
 
 class DiscoGAN(object):
     """The DiscoGAN model."""
@@ -76,7 +77,8 @@ class DiscoGAN(object):
         channels=1,
         attn=False,
         wasserstein=False,
-        limit_gpu_fraction=.4):
+        limit_gpu_fraction=.4,
+        similarity_loss = similarity.TrivialSimilarityLoss()):
         """Initialize the model."""
         self.dim_b1 = dim_b1
         self.dim_b2 = dim_b2
@@ -86,6 +88,7 @@ class DiscoGAN(object):
         self.channels = channels
         self.attn = attn
         self.wasserstein = wasserstein
+        self.similarity_loss = similarity_loss
 
         if restore_folder:
             self._restore(restore_folder)
@@ -250,8 +253,8 @@ class DiscoGAN(object):
         self.loss_G2 += 1*tf.reduce_mean(tf.abs(self.G21(self.xb1, is_training=self.is_training, reuse=True) - self.xb1))
 
         # similarity loss
-        self.loss_G1 += tf.reduce_mean(similarity_loss(self.xb1, self.Gb2))
-        self.loss_G2 += tf.reduce_mean(similarity_loss(self.xb2, self.Gb1))
+        self.loss_G1 += tf.reduce_mean(self.similarity_loss(self.xb1, self.Gb2))
+        self.loss_G2 += tf.reduce_mean(self.similarity_loss(self.xb2, self.Gb1))
 
         self.loss_G1 = nameop(self.loss_G1, 'loss_G1')
         self.loss_G2 = nameop(self.loss_G2, 'loss_G2')

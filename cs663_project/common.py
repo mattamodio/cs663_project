@@ -1,7 +1,5 @@
 import os
 
-import numpy as np
-
 
 #### FILEPATHS ####
 PROJECT_ROOT = os.path.abspath(os.path.join(

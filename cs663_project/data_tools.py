@@ -194,4 +194,3 @@ def generate_coil_proc(cleanup=True):
         os.remove(zip_fp)
         shutil.rmtree(temp_fp)
 
-

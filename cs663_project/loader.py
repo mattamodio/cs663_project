@@ -1,5 +1,6 @@
 import numpy as np
 
+
 class Loader(object):
     """A Loader class for feeding numpy matrices into tensorflow models."""
 
