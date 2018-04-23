@@ -1,0 +1,16 @@
+name: cs663_project
+dependencies:
+    - python=3.6
+    - matplotlib
+    - numpy
+    - Pillow
+    - scipy
+    - scikit-learn
+    - scikit-image
+    - requests
+    - jupyter
+    - requests
+    - pip:
+        - tensorflow-gpu
+        - pyyaml
+        - google_images_download

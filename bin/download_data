@@ -1,0 +1,50 @@
+#!/usr/bin/env python
+import argparse
+import os
+
+import requests
+
+import cs663_project.common as common
+
+
+COIL_100_URL = 'http://www.cs.columbia.edu/CAVE/databases/SLAM_coil-20_coil-100/coil-100/coil-100.zip'
+
+
+def prepare_dirs():
+    if not os.path.exists(common.DATA_RAW):
+        os.makedirs(common.DATA_RAW)
+    if not os.path.exists(common.DATA_PROCESSED):
+        os.makedirs(common.DATA_PROCESSED)
+
+
+def download_data(url, location=common.DATA_RAW):
+    file_name = url.split('/')[-1]
+    print("Downloading {}".format(file_name))
+    with open(location + file_name, "wb") as f:
+        response = requests.get(url)
+        f.write(response.content)
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "data",
+        help="Specify the dataset to download. Currently can be one of 'all' or 'coil'")
+    parser.add_argument(
+        '-r', "--remove", type=bool, default=True,
+        help="Remove the raw data")
+    args = parser.parse_args()
+
+    # Create data directories if they don't exist
+    prepare_dirs()
+
+    urls = []
+    if args.data == 'coil' or args.data == 'all':
+        urls.append(COIL_100_URL)
+
+    for url in urls:
+        download_data(url)
+
+
+if __name__ == '__main__':
+    main()
