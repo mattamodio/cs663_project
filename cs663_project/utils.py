@@ -9,7 +9,6 @@ import numpy as np
 DiscoConfig = namedtuple('DiscoConfig', [
     # Data parameters
     'num_classes', 'image_size', 'channels', 'data',
-    'early_stopping_enabled', 'early_stopping_patience',
     # Training parameters
     'batch_size', 'num_iters',
     # Optimizations
@@ -17,7 +16,8 @@ DiscoConfig = namedtuple('DiscoConfig', [
     'wasserstein',
     # Network parameters
     # Meta parameters
-    'model_out', 'save_iter'
+    'model_out', 'save_iter',
+    'early_stopping_enabled', 'early_stopping_patience'
 ])
 
 
