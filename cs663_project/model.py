@@ -1,6 +1,7 @@
 import tensorflow as tf
 import os
-from cs663_project.utils import lrelu, nameop, tbn, obn
+from cs663_project.utils import lrelu, nameop, tbn, obn, EarlyStopping
+
 import cs663_project.similarity as similarity
 
 
@@ -78,7 +79,8 @@ class DiscoGAN(object):
         attn=False,
         wasserstein=False,
         limit_gpu_fraction=.4,
-        similarity_loss = similarity.TrivialSimilarityLoss()):
+        similarity_loss = similarity.TrivialSimilarityLoss(),
+        early_stopping_patience = 10):
         """Initialize the model."""
         self.dim_b1 = dim_b1
         self.dim_b2 = dim_b2
@@ -103,6 +105,8 @@ class DiscoGAN(object):
         self._build()
         self.init_session(limit_gpu_fraction=limit_gpu_fraction)
         self.graph_init(self.sess)
+        self.early_stopping = EarlyStopping(
+            self.saver, self.sess, patience = early_stopping_patience, minimize = True)
 
     def init_session(self, limit_gpu_fraction=.4, no_gpu=False):
         """Initialize the session."""
@@ -302,6 +306,7 @@ class DiscoGAN(object):
             if self.attn:
                 _ = self.sess.run([obn('train_op_attn')], feed_dict=feed)
 
+
     def get_layer(self, xb1, xb2, name):
         """Get a layer of the network by name for the entire datasets given in xb1 and xb2."""
         tensor_name = "{}:0".format(name)
@@ -320,17 +325,20 @@ class DiscoGAN(object):
         losses = [tns.name[:-2].replace('loss_', '').split('/')[-1] for tns in tf.get_collection('losses')]
         return "Losses: {}".format(' '.join(losses))
 
-    def get_loss(self, xb1, xb2):
+    def get_loss(self, xb1, xb2, string=True):
         """Return all of the loss values for the given input."""
         feed = {tbn('xb1:0'): xb1,
                 tbn('xb2:0'): xb2,
                 tbn('is_training:0'): False}
 
         losses = self.sess.run(tf.get_collection('losses'), feed_dict=feed)
+        print(losses)
 
-        lstring = ' '.join(['{:.3f}'.format(loss) for loss in losses])
-
-        return lstring
+        if not string:
+            return losses
+        else:
+            lstring = ' '.join(['{:.3f}'.format(loss) for loss in losses])
+            return lstring
 
 
 
