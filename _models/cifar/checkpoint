@@ -1,0 +1,2 @@
+model_checkpoint_path: "/home/max/yale/cs663/cs663_project/_models//cifar/DiscoGAN"
+all_model_checkpoint_paths: "/home/max/yale/cs663/cs663_project/_models//cifar/DiscoGAN"

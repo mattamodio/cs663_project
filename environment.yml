@@ -3,7 +3,6 @@ dependencies:
     - python=3.6
     - matplotlib
     - numpy
-    - opencv
     - Pillow
     - scipy
     - scikit-learn
@@ -14,3 +13,4 @@ dependencies:
     - pip:
         - tensorflow-gpu
         - pyyaml
+        - google_images_download

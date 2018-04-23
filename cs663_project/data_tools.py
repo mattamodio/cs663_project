@@ -5,15 +5,23 @@ import re
 import shutil
 import zipfile
 
+import matplotlib.pyplot as plt
 import numpy as np
 import scipy.ndimage
-from scipy.misc import imrotate, imresize
+from scipy.misc import imrotate, imresize, toimage
+from tensorflow.examples.tutorials.mnist import input_data
 
 import cs663_project.common as common
 
 
 def randomize_image(img, enlarge_size=286, output_size=256):
+    # imresize is terrible and cannot recognize H x W x 1: temporarily switch to H x W
+    if len(img.shape) == 3 and img.shape[-1] == 1:
+        img = img.reshape((img.shape[0], img.shape[1]))
     img = imresize(img, [enlarge_size, enlarge_size])
+    if len(img.shape) == 2:
+        img = img.reshape((img.shape[0], img.shape[1], 1))
+
     h1 = int(np.ceil(np.random.uniform(1e-2, enlarge_size-output_size)))
     w1 = int(np.ceil(np.random.uniform(1e-2, enlarge_size-output_size)))
     img = img[h1:h1+output_size, w1:w1+output_size]
@@ -67,7 +75,7 @@ def get_data_cifar(dir='data/cifar/data_batch_*'):
 
 def get_data_mnist():
     """Return original and rotated MNIST."""
-    mnist = input_data.read_data_sets('MNIST_data', one_hot=False)
+    mnist = input_data.read_data_sets(common.DATA_ROOT + 'MNIST_data', one_hot=False)
 
     imgs = mnist.train.images.reshape((-1, 28, 28))
     #imgs = imgs[np.logical_or(mnist.train.labels == 3, mnist.train.labels == 7)]
