@@ -33,6 +33,7 @@ def build_config(args):
         image_size = imdim,
         channels = channels,
         batch_size = args.batch_size,
+        data = args.data,
         num_iters = args.num_iters,
         learning_rate = args.learning_rate,
         attn = args.attention,
@@ -147,7 +148,7 @@ def train(batch1, batch2, dconfig):
                         img_masked = color.hsv2rgb(img_hsv)
                         ax4.imshow(img_masked)
             fig.canvas.draw()
-            fig.savefig('b1_to_b2_{}.png'.format(args.data), dpi=500)
+            fig.savefig('b1_to_b2_{}.png'.format(dconfig.data), dpi=500)
 
 
             fig.clf()
@@ -185,7 +186,7 @@ def train(batch1, batch2, dconfig):
                         img_masked = color.hsv2rgb(img_hsv)
                         ax4.imshow(img_masked)
             fig.canvas.draw()
-            fig.savefig('b2_to_b1_{}.png'.format(args.data), dpi=500)
+            fig.savefig('b2_to_b1_{}.png'.format(dconfig.data), dpi=500)
 
         if i % dconfig.save_iter == 0:
             print('Saved.')

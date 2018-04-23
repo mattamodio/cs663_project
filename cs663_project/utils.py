@@ -8,7 +8,7 @@ import numpy as np
 # Parameters for the neural network
 DiscoConfig = namedtuple('DiscoConfig', [
     # Data parameters
-    'num_classes', 'image_size', 'channels',
+    'num_classes', 'image_size', 'channels', 'data',
     # Training parameters
     'batch_size', 'num_iters',
     # Optimizations
