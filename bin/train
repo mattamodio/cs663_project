@@ -11,7 +11,7 @@ from tensorflow.examples.tutorials.mnist import input_data
 from skimage import color
 
 import cs663_project.common as common
-from cs663_project.utils import now, DiscoConfig
+from cs663_project.utils import now, DiscoConfig, EarlyStopping
 from cs663_project.model import DiscoGAN
 from cs663_project.loader import Loader
 from cs663_project.data_tools import get_data, randomize_image
@@ -23,6 +23,11 @@ def build_config(args):
 
     if args.model_out is None:
         model_out = "{}/{}/".format(common.MODEL_FOLDER, args.data)
+
+    early_stopping_patience = args.early_stopping_patience
+    early_stopping_enabled = False
+    if early_stopping_patience > 0:
+        early_stopping_enabled = True
 
     # Note: could make this truly optional (e.g., don't do decay if not here)
     decay = args.decay if (args.decay != 0.0) else args.learning_rate / 100.
@@ -40,7 +45,9 @@ def build_config(args):
         decay = decay,
         wasserstein = args.wasserstein,
         model_out = model_out,
-        save_iter = args.save_interval
+        save_iter = args.save_interval,
+        early_stopping_patience = early_stopping_patience,
+        early_stopping_enabled = early_stopping_enabled
     )
 
     return batch1, batch2, disco_config
@@ -50,6 +57,7 @@ def train(batch1, batch2, dconfig):
     load1 = Loader(batch1, shuffle=True)
     load2 = Loader(batch2, shuffle=True)
 
+
     # Build DiscoGAN with supplied parameters
     discogan = DiscoGAN(
         dim_b1 = dconfig.image_size,
@@ -57,7 +65,8 @@ def train(batch1, batch2, dconfig):
         channels = dconfig.channels,
         learning_rate = dconfig.learning_rate,
         attn = dconfig.attn,
-        wasserstein = dconfig.wasserstein
+        wasserstein = dconfig.wasserstein,
+        early_stopping_patience = dconfig.early_stopping_patience
     )
 
     if not os.path.exists(dconfig.model_out):
@@ -83,7 +92,6 @@ def train(batch1, batch2, dconfig):
             enlarge_size=int(1.2 * dconfig.image_size),
             output_size=dconfig.image_size) for img in xb2], 0)
 
-        discogan.train(xb1, xb2)
 
         if i >= 100000 and i % 1000 == 0:
             discogan.learning_rate -= dconfig.decay
@@ -95,6 +103,16 @@ def train(batch1, batch2, dconfig):
             print(discogan.get_loss_names())
             lstring = discogan.get_loss(xb1, xb2)
             print("{} ({}): {}".format(i, now(), lstring))
+
+            # Just do the early stopping check every 500 iterations
+            if dconfig.early_stopping_enabled:
+                if discogan.early_stopping(dloss, gloss, i):
+                    print("Early stopping.\nBest monitored D loss was {:.8f}\nBest monitored G loss was {:.8f}\nAt iteration {}.".format(
+                        early_stopping.best_monitored_dloss,
+                        early_stopping.best_monitored_gloss,
+                        early_stopping.best_monitored_epoch
+                    ))
+                    break
 
             xb1_reconstructed = discogan.get_layer(testb1, testb2, 'xb1_reconstructed')
             Gb1 = discogan.get_layer(testb1, testb2, 'Gb1')
@@ -230,8 +248,11 @@ def main():
         help="Specify the save folder for the output model."
     )
     parser.add_argument(
-        '-s', "--save_interval", type=int, default=100,
+        '-s', "--save_interval", type=int, default=10,
         help="Save the model every x iterations.")
+    parser.add_argument(
+        '-e', "--early_stopping_patience", type=int, default=0,
+        help="Sets the early stopping patience -- in groups of 500 iterations. E.g., setting this to 10 would result in a stopping patience of 10*500 == 5000 iterations")
     args = parser.parse_args()
 
     batch1, batch2, dconfig = build_config(args)

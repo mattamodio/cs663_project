@@ -16,8 +16,83 @@ DiscoConfig = namedtuple('DiscoConfig', [
     'wasserstein',
     # Network parameters
     # Meta parameters
-    'model_out', 'save_iter'
+    'model_out', 'save_iter',
+    'early_stopping_enabled', 'early_stopping_patience'
 ])
+
+
+class EarlyStopping(object):
+    """
+    Provides early stopping functionality. Keeps track of model accuracy,
+    and if it doesn't improve over time restores last best performing
+    parameters.
+
+    credit: @navoshta
+    """
+
+    def __init__(self, saver, session, patience = 100, minimize = True):
+        """
+        Initialises a `EarlyStopping` isntance.
+
+        Parameters
+        ----------
+        saver     :
+                    TensorFlow Saver object to be used for saving and restoring model.
+        session   :
+                    TensorFlow Session object containing graph where model is restored.
+        patience  :
+                    Early stopping patience. This is the number of iterations we wait for
+                    accuracy to start improving again before stopping and restoring
+                    previous best performing parameters.
+
+        Returns
+        -------
+        New instance.
+        """
+        self.minimize = minimize
+        self.patience = patience
+        self.saver = saver
+        self.session = session
+        self.best_monitored_dloss = np.inf if minimize else 0.
+        self.best_monitored_gloss = np.inf if minimize else 0.
+        self.best_monitored_iteration = 0
+        self.restore_path = None
+
+    def __call__(self, d_loss, g_loss, iteration):
+        """
+        Checks if we need to stop and restores the last well performing values if we do.
+
+        Parameters
+        ----------
+            d_loss (float) : Last iteration monitored discriminator loss.
+            g_loss (float) : Last iteration monitored generator loss.
+            iteration (int) : Last iteration number.
+
+        Returns
+        -------
+            `True` if we waited enough and it's time to stop and we restored the
+            best performing weights, or `False` otherwise.
+        """
+        if ((self.minimize and
+             dloss < self.best_monitored_dloss and
+             gloss < self.best_monitored_gloss) or
+            (not self.minimize and
+             dloss > self.best_monitored_dloss and
+             gloss > self.best_monitored_gloss)
+           ):
+            self.best_monitored_dloss = dloss
+            self.best_monitored_gloss = gloss
+            self.best_monitored_iteration = iteration
+            self.restore_path = self.saver.save(
+                self.session, os.getcwd() + "/early_stopping_checkpoint")
+        elif self.best_monitored_iteration + self.patience < iteration:
+            if self.restore_path != None:
+                self.saver.restore(self.session, self.restore_path)
+            else:
+                print("ERROR: Failed to restore session")
+            return True
+
+        return False
 
 
 def now():
